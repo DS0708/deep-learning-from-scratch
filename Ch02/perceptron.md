@@ -159,7 +159,7 @@ def OR(x1,x2):
 - 하지만 층을 쌓아 다층 퍼셉트론(multi-layer perceptron)으로는 만들 수 있다.
 
 ### 기존 게이트 조합
-<img src="../dataset/XOR.png">
+<img src="../dataset/mdImage/XOR.png">
 
 - AND, NAND, OR 게이트를 조합하면 XOR게이트를 만들 수 있다.
 - XOR 게이트 구현하기
@@ -181,7 +181,7 @@ print(XOR(1,1)) #0
 ```
 
 ### XOR multi-layer perceptron
-<img src="../dataset/XORMulti.png">
+<img src="../dataset/mdImage/XORMulti.png">
 
 - 실제로 AND, OR은 단층 퍼셉트론인 데 반해, XOR은 2층 퍼셉트론이다
 - 이처럼 층이 여러 개인 퍼셉트론을 다층 퍼셉트론이라고 한다.
