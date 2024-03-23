@@ -47,5 +47,58 @@ y를 출력하는 흐름이고 이를 그려보면 다음과 같다.
 
 
 ## 3.2 활성화 함수
+- 임계값을 경계로 출력이 바뀌는 함수를 `계단 함수 (Step Function)`이라고 한다.
+- 여태껏 (퍼셉트론에서는) 활성화 함수로 계단 함수를 이용했다.
+- 즉, 확성화 함수로 쓸 수 있는 여러 후보 중 퍼셉트론은 계단 함수를 채용 한 것.
+- `이러한 활성화 함수를 계단 함수에서 다른 함수로 변경 하는 것이 신경망으로 나아가는 방법이다.`
 
+### 3.2.1 시그모이드 함수
+- 다음은 신경망에서 자주 이용하는 활성화 함수인 `시그모이드 함수(sigmoid function)`를 나타낸 식이다.
+- 식 h(x) = 1 / 1 + exp(-x), 여기서 exp(-x) = e ^ -x 이다.
+- 신경망에서는 활성화 함수로 시그모이드 함수를 이용하여 신호를 변환하고 변환된 신호를 다음 뉴런에 전달
+- `사실 앞 장에서 본 퍼셉트론과 신경망의 주된 차이는 이 활성화 함수 뿐이다.`
+- 그 외에 뉴런이 여러 층으로 이어지는 구조와 신호를 전달하는 방법은 기본적으로 앞에서 살펴본 퍼셉트론과 비슷
+
+### 3.2.1 계단 함수 구현하기
+```python
+import numpy as np
+
+def step_function(x):
+    return np.array(x > 0, dtype=int)
+
+x = np.array([-1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
+y = step_function(x)
+print(y)
+```
+```
+결과 출력 :
+
+[0 1 1 1 1 1]
+```
+- numpy를 통해 배열을 생성했다.
+- 이떄 x > 0 의 결과는 bool 배열이므로 dtype=int 를 통해 자료형을 변환하였음
+
+### 3.2.2 계단 함수의 그래프
+```python
+import numpy as np
+import matplotlib.pylab as plt
+
+def step_function(x):
+    return np.array(x > 0, dtype=int)
+
+x_graph = np.arange(-5.0, 5.0, 0.1)
+y = step_function(x_graph)
+plt.plot(x_graph,y)
+plt.ylim(-0.1, 1.1) # y축 범위 지정
+plt.show()
+```
+- matplotlib 라이브러리 사용
+- np.aranage를 통해 -5.0 ~ 5.0 전까지 0.1 간격의 넘파이 배열 생성
+- step_function()은 인수로 받은 넘파이 배열의 원소 각각을 인수로 계단 함수 실행해, 
+그 결과를 다시 배열로 만들어 돌려준다.
+- 이 x,y 배열을 그래프로 그린(plot) 결과
+<img src="../dataset/mdImage/stepFunction" width="400" height="300">
+
+
+### 3.2.4 시그모이드 함수 구현하기
 
