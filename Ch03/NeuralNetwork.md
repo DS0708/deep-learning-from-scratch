@@ -167,3 +167,78 @@ h(x) = x (x >  0),
 후반부에는 주로 ReLU 함수를 사용한다.
 
 
+
+## 3.3 다차원 배열의 계산
+
+> numpy라이브러리를 활용하여 다차원 배열 계산하기
+
+## 3.3.1 다차원 배열
+```python
+import numpy as np
+
+A = np.array([1,2,3])
+print(A)
+print(np.ndim(A))
+print(A.shape)
+print("----------")
+B = np.array([[1,2,3],[4,5,6]])
+print(B)
+print(np.ndim(B))
+print(B.shape)
+```
+```
+결과 
+
+[1 2 3]
+1
+(3,)
+----------
+[[1 2 3]
+ [4 5 6]]
+2
+(2, 3)
+```
+- np.array를 통해 n차원 배열 생성 가능
+- np.ndim()을 통해 해당 배열의 차원을 알 수 있다.
+- shape이라는 인스턴스 변수를 통해 배열의 형상을 알 수 있다.
+
+### 3.3.2 행렬의 곱
+```python
+import numpy as np
+
+A = np.array([[1,2],[3,4]])
+B = np.array([[5,6],[7,8]])
+C = np.dot(A,B)
+print(C)
+
+D = np.array([3,4])
+print(np.dot(A,D))
+```
+```
+결과
+
+[[19 22]
+ [43 50]]
+[11 25]
+```
+- np.dot()을 통해 행렬의 곱을 구할 수 있다.
+- 이때 A의 행의 수 와 B의 열의 수가 동일하지 않으면 `오류 발생`
+- 다른 차원의 배열끼리 곱할 때도 대응하는 차원의 원소 수를 일치시켜야 한다.
+
+### 3.3.3 신경망에서의 행렬 곱
+
+<img src="../dataset/mdImage/dotMatrix.png" width="400">
+
+- 입력 벡터 x = [1,2] 일때 y구하기
+```python
+import numpy as np
+
+X = np.array([1,2])
+W = np.array([[1,3,5],[2,4,6]])
+Y = np.dot(X,W)
+print(Y)
+```
+> 이처럼 numpy를 이용하여 간단한 신경망도 손쉽게 구할 수 있다. 이때 W의 행의 개수는 X의 원소 개수와
+> 같아야 하고 W의 열의 개수는 Y의 원소의 개수와 같다.
+
+
