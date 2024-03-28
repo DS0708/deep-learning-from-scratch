@@ -263,18 +263,23 @@ Wij(k) 일때, i는 다음 층의 뉴런을 나타내는 것이고 j는 앞 층�
 
 - 1층의 첫 번째 뉴런으로 가는 신호
 
-  <img src="../dataset/mdImage/1층첫번째뉴런으로.png" width="400">
+  <img src="../dataset/mdImage/oneLayer.png" width="400">
   
   - 1은 편향을 뜻하는 뉴런이다.
   - a1(1) = x1*w11(1) + x2*w12(1) + b1(1)
   - 여기서 행렬의 곱을 이용하여 아래와 같이 간소화 할 수 있다.
   - A(1) = XW(1) + B(1)
   - A(1) = [ a1(1) a2(1) a3(1) ]
+  - $$A_{m,n} = 
+  \begin{pmatrix}
+  a_{1,1} & a_{1,2} & \cdots & a_{1,n} \\
+  a_{2,1} & a_{2,2} & \cdots & a_{2,n} \\
+  \vdots  & \vdots  & \ddots & \vdots  \\
+  a_{m,1} & a_{m,2} & \cdots & a_{m,n}
+  \end{pmatrix}$$
   - X    = [ x1 x2 ]
   - W(1) = [ w11 ]
-  -        [     ]
-  
-  $$1 + 1 = 2$$ 
+
 
 
 
