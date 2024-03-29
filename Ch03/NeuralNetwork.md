@@ -1,10 +1,10 @@
 # Chapter03 신경망
 
-Chapter02에서 배운 퍼셉트론으로는 이론상 컴퓨터가 수행하는 복잡한 처리도 표현할 수 있었다. 
+Chapter02에서 배운 퍼셉트론으로는 이론상 컴퓨터가 수행하는 복잡한 처리도 표현할 수 있었다.
 나쁜 소식은 가중치를 설정하는 작업은 여전히 사람이 수동적으로 해야한다는 것이다. 신경망(Neural Network)은
 이 나쁜 소식을 해결해준다. 가중치 매개변수의 적절한 값을 데이터로부터 자동으로 학습하는 능력이 이제부터
 살펴볼 신경망의 아주 중요한 성질이다. 이번 장에서는 신경망의 개요를 설명하고 신경망이 입력 데이터가
-무엇인지 식별하는 처리 과정을 자세히 알아보겠다. 
+무엇인지 식별하는 처리 과정을 자세히 알아보겠다.
 
 ## 3.1 퍼셉트론에서 신경망으로
 신경망은 퍼셉트론과 공통점이 많다. 퍼셉트론과 다른 점을 중심으로 신경망의 구조를 설명할 것
@@ -15,7 +15,7 @@ Chapter02에서 배운 퍼셉트론으로는 이론상 컴퓨터가 수행하는
 - 은닉충의 뉴런은 입력층이나 출력층과 달리 사람 눈에는 보이지 않는다.
 - 파이썬 배열의 인덱스가 0부터 시작하니 입력층에서 출력층 방향으로 0층부터 시작
 - 그림에서는 입력층이 0층, 은닉층이 1층, 출력층이 2층이 된다.
-> 신경망은 3층이지만 가중치를 갖는 층은 2개이므로 '2층 신경망'이라고 한다. 
+> 신경망은 3층이지만 가중치를 갖는 층은 2개이므로 '2층 신경망'이라고 한다.
 > 하지만 문헌에 따라서는 '3층 신경망'이라고 하는 경우도 있다.
 > 여기서는 가중치를 갖는 층의 개수를 기준으로 하겠다.
 
@@ -32,13 +32,13 @@ Chapter02에서 배운 퍼셉트론으로는 이론상 컴퓨터가 수행하는
   - h(x) = 0 (x <= 0), 1 (x > 0)
 
 ### 3.1.3 활성화 함수의 등장
-- 조금 전 h(x)라는 함수가 등장했는데, 이처럼 입력 신호의 총합을 출력 신호로 변환 하는 함수를 
-일반적으로 `활성화 함수(activation function)`라고 한다.
+- 조금 전 h(x)라는 함수가 등장했는데, 이처럼 입력 신호의 총합을 출력 신호로 변환 하는 함수를
+  일반적으로 `활성화 함수(activation function)`라고 한다.
 - 3.1.2의 h(x)수식에서 입력 값을 a로 치환하면
   - a = b + w1*x1 + w2*x2
   - y = h(a)
-- 가중치가 달린 입력 신호와 편향의 총합을 계산하고, 이를 a라고 한다. 그리고 a를 함수 h()에 넣어 
-y를 출력하는 흐름이고 이를 그려보면 다음과 같다.
+- 가중치가 달린 입력 신호와 편향의 총합을 계산하고, 이를 a라고 한다. 그리고 a를 함수 h()에 넣어
+  y를 출력하는 흐름이고 이를 그려보면 다음과 같다.
 
 <img src="../dataset/mdImage/활성화함수의처리과정.png" width="300" height="300">
 
@@ -64,7 +64,7 @@ y를 출력하는 흐름이고 이를 그려보면 다음과 같다.
 import numpy as np
 
 def step_function(x):
-    return np.array(x > 0, dtype=int)
+  return np.array(x > 0, dtype=int)
 
 x = np.array([-1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
 y = step_function(x)
@@ -84,7 +84,7 @@ import numpy as np
 import matplotlib.pylab as plt
 
 def step_function(x):
-    return np.array(x > 0, dtype=int)
+  return np.array(x > 0, dtype=int)
 
 x_graph = np.arange(-5.0, 5.0, 0.1)
 y = step_function(x_graph)
@@ -94,8 +94,8 @@ plt.show()
 ```
 - matplotlib 라이브러리 사용
 - np.aranage를 통해 -5.0 ~ 5.0 전까지 0.1 간격의 넘파이 배열 생성
-- step_function()은 인수로 받은 넘파이 배열의 원소 각각을 인수로 계단 함수 실행해, 
-그 결과를 다시 배열로 만들어 돌려준다.
+- step_function()은 인수로 받은 넘파이 배열의 원소 각각을 인수로 계단 함수 실행해,
+  그 결과를 다시 배열로 만들어 돌려준다.
 - 이 x,y 배열을 그래프로 그린(plot) 결과
 
   <img src="../dataset/mdImage/stepFunction.png" width="400" height="300">
@@ -106,7 +106,7 @@ plt.show()
 import numpy as np
 import matplotlib.pylab as plt
 def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
+  return 1 / (1 + np.exp(-x))
 
 x = np.array([-1.0, 1.0, 2.0])
 print(sigmoid(x))
@@ -119,7 +119,7 @@ plt.show()
 ```
 - 이 함수가 넘파이 배열도 훌륭히 처리해줄 수 있는 비밀은 넘파이의 브로드캐스트 때문
 - 브로드캐스트 기능이란 넘파이 배열과 스칼라값의 연산을 넘파이 배열의 원소 각각과 스칼라값의 연산으로
-바꿔 수행하는 것
+  바꿔 수행하는 것
 - 그래프 결과
 
   <img src="../dataset/mdImage/sigmoid.png" width="400" height="300">
@@ -146,7 +146,7 @@ plt.show()
 - 신경망에서는 활성화 함수로 비선형 함수를 사용해야 한다.
 - 선형 함수를 사용해서는 신경망의 층을 깊게 하는 의미가 없어지기 때문이다.
 - 예를 들어 h(x) = cx를 활성화 함수로 사용한 3층 네트워크의 경우 y(x) = h(h(h(x))) = c*c*c*x
-로 나타낼 수 있고, 즉 y(x) = ax와 똑같은 식이 된다.
+  로 나타낼 수 있고, 즉 y(x) = ax와 똑같은 식이 된다.
 - 이러한 예처럼 선형 함수를 이용해서 여러 층으로 구성하는 이점을 살릴 수 없다.
 
 ### 3.2.7 ReLU 함수
@@ -155,7 +155,7 @@ plt.show()
 
 ```python
 def relu(x):
-    return np.maximum(0, x)
+  return np.maximum(0, x)
 ```
 > numpy의 maximum 함수를 사용했다.
 
@@ -264,21 +264,125 @@ Wij(k) 일때, i는 다음 층의 뉴런을 나타내는 것이고 j는 앞 층�
 - 1층의 첫 번째 뉴런으로 가는 신호
 
   <img src="../dataset/mdImage/oneLayer.png" width="400">
-  
+
   - 1은 편향을 뜻하는 뉴런이다.
   - a1(1) = x1*w11(1) + x2*w12(1) + b1(1)
   - 여기서 행렬의 곱을 이용하여 아래와 같이 간소화 할 수 있다.
   - A(1) = XW(1) + B(1)
   - A(1) = [ a1(1) a2(1) a3(1) ]
-  - $$A_{m,n} = 
-  \begin{pmatrix}
-  a_{1,1} & a_{1,2} & \cdots & a_{1,n} \\
-  a_{2,1} & a_{2,2} & \cdots & a_{2,n} \\
-  \vdots  & \vdots  & \ddots & \vdots  \\
-  a_{m,1} & a_{m,2} & \cdots & a_{m,n}
-  \end{pmatrix}$$
-  - X    = [ x1 x2 ]
-  - W(1) = [ w11 ]
+  - B(1) = [ b1(1) b2(1) b3(1) ]
+  - X = [ x1 x2 ]
+  - W(1) = [ w11(1) w21(1) w31(1) ], [ w12(1) w22(1) w32(1) ]
+  > 행렬 표기법 Aij 에서 i는 행, j는 열을 나타내지만 여기서 W표기에 대해서는 프로그래밍에 초점을
+  > 맞추다 보니 행과 열을 반대로 나타낸 것 같다.<br> 예를 들어 W21 이면 행렬식 표기에서는 2행 1열 이라는 의미
+  > 이지만 여기서는 1행의 2열에 위치하며 다음 층의 두번째 뉴런과 이전 층의 첫번째 뉴런과 이어지는 가중치라는
+  > 의미이다.
+  - numpy를 이용하여 구현하기(B1, X, W1은 적당한 값으로 설정)
+  ```python
+  import numpy as np
+  
+  B1 = np.array([0.1, 0.2, 0.3])
+  X = np.array([0.5, 0.4])
+  W1 = np.array([[0.1, 0.1, 0.1], [0.5, 0.1, 0.1]])
+  
+  A1 = np.dot(X,W1) + B1
+  
+  print(A1)
+  ```
+  ```
+  출력 
+  
+  [0.35 0.29 0.39]
+  ```
+  - 1층의 활성화 함수에서의 처리
+
+  <img src="../dataset/mdImage/oneLayerActivation.png" width="400">
+
+  ```python
+  Z1 = sigmoid(A1)
+  print(Z1)
+  ```
+
+- 1층에서 2층으로의 신호 전달
+
+  <img src="../dataset/mdImage/fromOneToTwo.png" width="400">
+
+  - Z = [ z1 z2 z3 ]
+  - W(2) = [ w11(2) w21(2) ] , [ w12(2) w22(2) ] , [ w13(2) w23(2) ]
+  - B(2) = [ b1(2) b2(2) ]
+  - A(2) = Z*W(2) + B(2) = [ a1(2) a2(2) ]
+  - a1(2) = z1*w11(2) + z2*w12(2) + z3*w13(2)
+  - a2(2) = z1*w21(2) + z2*w22(2) + z3*w23(2)
+  - numpy로 구현하기 (임의의 값 설정, 활성화 함수는 시그모이드)
+
+  ```python
+  W2 = np.array([[0.2, 0.1], [0.5, 0.8], [0.4, 0.3]])
+  B2 = np.array([0.1, 0.1])
+  A2 = np.dot(Z1,W2) + B2
+  
+  print("A2 = ", A2)
+  
+  Z2 = sigmoid(A2)
+  print("Z2 = ", Z2)
+  ```
+  ```
+  출력
+  
+  A2 =  [0.74183466 0.79514347]
+  Z2 =  [0.67739692 0.68893467]
+  ```
+  > 1층의 출력 Z1이 2층의 입력이 된다는 점을 제외하면 조금 전의 구현과 동일하다.
+
+- 2층에서 출력층으로의 신호 전달
+
+  <img src="../dataset/mdImage/ouputLayer.png" width="400">
+  
+  > 활성화 함수만 제외하면 지금까지 구현과 거의 같다. 그러므로 skip
+
+
+### 3.4.3 구현 정리
+
+```python
+import numpy as np
+from sigmoid import sigmoid
+
+def identity_fun(x):
+    return x
+
+def init_network():
+    network = {}
+    network['W1'] = np.array([[0.1, 0.1, 0.1], [0.5, 0.1, 0.1]])
+    network['B1'] = np.array([0.1, 0.2, 0.3])
+    network['W2'] = np.array([[0.2, 0.1], [0.5, 0.8], [0.4, 0.3]])
+    network['B2'] = np.array([0.1, 0.1])
+    network['W3'] = np.array([[0.1,0.2],[0.3,0.4]])
+    network['B3'] = np.array([0.1,0.4])
+    return network
+
+def forward(network, X) :
+    W1, W2, W3 = network['W1'], network['W2'], network['W3']
+    B1, B2, B3 = network['B1'], network['B2'], network['B3']
+
+    A1 = np.dot(X,W1) + B1
+    Z1 = sigmoid(A1)
+    A2 = np.dot(Z1,W2) + B2
+    Z2 = sigmoid(A2)
+    A3 = np.dot(Z2,W3) + B3
+    y = identity_fun(A3)
+
+    return y
+
+network = init_network()
+X = np.array([0.5, 0.4])
+y = forward(network, X)
+print(y)
+```
+
+- 출력층 활성화 함수로는 은닉층과 다르게 하기위해 입력값을 그대로 출력하는 identity_fun()을 정의
+- init_network() 함수는 가중치와 편향을 초기화 하고 딕셔너리 형태로 return
+- forward() 함수는 입력 신호를 출력으로 변환하는 순방향 처리 과정을 모두 구현하고 있다.
+  
+
 
 
 
