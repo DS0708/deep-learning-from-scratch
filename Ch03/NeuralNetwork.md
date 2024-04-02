@@ -406,9 +406,11 @@ print(y)
 
 #### 소프트맥스 함수
 - 분류에서는 `softmax function`(소프트맥스 함수)를 사용하며 식은 다음과 같다.
+
 $$
 y_k = \frac{\exp(a_k)}{\sum_{j=1}^{K} \exp(a_j)}
 $$
+
 - 
 
   
