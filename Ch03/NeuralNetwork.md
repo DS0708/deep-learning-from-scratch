@@ -661,6 +661,121 @@ print("Accuracy:" + str(float(accuracy_cnt) / len(x)))
 
 ### 3.6.3 배치 처리
 
+- 배치 처리를 하여 속도를 개선해보자 !
+
+<img src="../dataset/mdImage/batch1.png" width="900">
+
+- 3.6.2 의 코드는 위의 그림처럼 하나의 이미지씩 처리하였다.
+- 이것을 100개씩 묶어서 처리해보자
+
+<img src="../dataset/mdImage/batch2.png" width="900">
+
+- 100개씩 묶어서 처리할 때 다음과 같은 식을 따른다.
+- 결국 입력 값으로는 원래 1*784의 행렬이 들어갔지만, 이제는 100*784의 행렬 형태를 넣어 100*10의 결과를
+받아 이를 한번에 처리하겠다는 아이디어이다.
+- 이처럼 하나로 묶은 입력 데이터를 배치(batch)라고 한다.
+- 이는 I/O를 통해 데이터를 읽는 횟수가 줄어 속도가 빨라진다. 
+- 또한 수치 계산 라이브러리 대부분이 큰 배열을 효율적으로 처리할 수 있도록 고도로 최적화 되어 있기 때문에 빨라진다.
+- 이러한 이론을 바탕으로 코드를 구현해보자 - neuralnet_mnist_batch.py
+```python
+# coding: utf-8
+import sys, os
+sys.path.append(os.pardir)  # 부모 디렉터리의 파일을 가져올 수 있도록
+import numpy as np
+import pickle
+from dataset.mnist import load_mnist
+from common.functions import sigmoid, softmax
+
+
+def get_data():
+    (x_train, t_train), (x_test, t_test) = load_mnist(normalize=True, flatten=True, one_hot_label=False)
+    return x_test, t_test
+
+
+def init_network():
+    with open("sample_weight.pkl", 'rb') as f:
+        network = pickle.load(f)
+    return network
+
+
+def predict(network, x):
+    w1, w2, w3 = network['W1'], network['W2'], network['W3']
+    b1, b2, b3 = network['b1'], network['b2'], network['b3']
+
+    a1 = np.dot(x, w1) + b1
+    z1 = sigmoid(a1)
+    a2 = np.dot(z1, w2) + b2
+    z2 = sigmoid(a2)
+    a3 = np.dot(z2, w3) + b3
+    y = softmax(a3)
+
+    return y
+
+
+x, t = get_data()
+network = init_network()
+
+batch_size = 100 # 배치 크기
+accuracy_cnt = 0
+
+for i in range(0, len(x), batch_size):
+    x_batch = x[i:i+batch_size]
+    y_batch = predict(network, x_batch)
+    p = np.argmax(y_batch, axis=1)
+    accuracy_cnt += np.sum(p == t[i:i+batch_size])
+
+print("Accuracy:" + str(float(accuracy_cnt) / len(x)))
+```
+- range(start,end,step)는 start에서 end-1 까지 step 간격으로 증가하는 정수를 반환하는 반복자를 돌려준다.
+- 이 range() 함수가 반환하는 반복자를 바탕으로 x[i:i+batch_size]를 통해 데이터를 batch_size만큼 묶는다.
+- 이 예에서는 x[0:100], x[100:200] 와 같이 앞에서부터 100장씩 묶인다고 생각하면된다.
+- argmax에서는 axis=1 이라는 인수를 추가하였는데 이는 100*10의 배열 중 1번쨰 차원을 구성하는 각 원소에서
+(1번째 차원을 축으로) 최댓값의 인덱스를 찾도록 한 것이다. (인덱스가 0부터 시작하니 0번째 차원이 가장 처음 차원)
+- 예를 들어 다음과 같이 shape을 기준으로 axis가 1 이면 2인 차원을 기준으로 최댓값의 index를 반환한다.
+  ```python
+  SX = np.array([[0.1, 0.8, 0.1], [0.3, 0.1, 0.6]])
+  print(SX.shape)
+  SY = np.argmax(SX, axis=1)
+  print(SY)
+  ```
+  ```
+  결과 
+  
+  (2, 3)
+  [1 2]
+  ```
+  - axis=0 이면 shape에서 3을 기준으로 하기 때문에 [1, 0, 1]이 반환된다 !!
+- 마지막으로 배치 단위로 분류한 결과를 실제 답과 비교하는데 이를 위해 == 연산자를 사용해 numpy 배열끼리 비교하여
+True/False로 구성된 bool 배열을 만들고, 이 결과 배열에서 True가 몇 개인지 센다.
+  ```python
+  import numpy as np
+  
+  y = np.array([1, 2, 1, 0])
+  t = np.array([1, 2, 0, 0])
+  print(y==t)
+  print(np.sum(y==t))
+  ```
+  ```
+  [True True False True]
+  3
+  ```
+
+
+## 3.7 정리
+- 이번 장에서는 신경망의 순전파를 살펴봤으며 이번 장의 신경망은 각 층의 뉴런들이 다음 층의 뉴런으로 신호를 전달
+한다는 점에서 앞 장의 퍼셉트론과 같다.
+- 하지만 다음 뉴런으로 갈 때 신호를 변화시키는 활성화 함수에 큰 차이가 있었는데 
+- 신경망에서는 매끄럽게 변화하는 시그모이드 함수를
+- 퍼셉트론에서는 갑자기 변화하는 계단 함수를 활성화 함수로 사용했다.
+- 이 차이가 신경망 학습에서 중요하다. 이에 대해서는 다음 장에서 설명하겠다.
+- 이번 장에서 배운 내용
+  1. 신경망에서는 활성화 함수로 시그모이드 함수와 ReLU 함수 같은 매끄럽게 변화하는 함수를 이용하낟.
+  2. 넘파이의 다차원 배열을 잘 사용하면 신경망을 효율적으로 구현할 수 있다.
+  3. 기계학습 문제는 크게 회귀와 분류로 나눌 수 있다.
+  4. 출력층의 활성화 함수로는 회귀에서는 주로 항등 함수를, 분류에서는 주로 소프트맥스 함수를 이용한다.
+  5. 분류에서는 출력층의 뉴런 수를 분류하려는 클래스 수와 같게 설정한다.
+  6. 입력 데이터를 묶은 것을 배치라 하며, 추론 처리를 이 배치 단위로 진행하면 결과를 훨씬 빠르게 얻을 수 있다.
+
 
 
 
