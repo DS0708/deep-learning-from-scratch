@@ -777,6 +777,176 @@ class TwoLayerNet:
 
 ### 4.5.2 미니배치 학습 구현하기
 
+```python
+import sys, os
+
+sys.path.append(os.pardir)  # 부모 디렉터리의 파일을 가져올 수 있도록 설정
+import numpy as np
+import matplotlib.pyplot as plt
+from dataset.mnist import load_mnist
+from two_layer_net import TwoLayerNet
+# 데이터 읽기
+(x_train, t_train), (x_test, t_test) = load_mnist(normalize=True, one_hot_label=True)
+
+network = TwoLayerNet(input_size=784, hidden_size=50, output_size=10)
+
+# 하이퍼파라미터
+iters_num = 10000  # 반복 횟수를 적절히 설정한다.
+train_size = x_train.shape[0]
+batch_size = 100  # 미니배치 크기
+learning_rate = 0.1
+
+train_loss_list = []
+
+for i in range(iters_num):
+    # 미니배치 획득
+    batch_mask = np.random.choice(train_size, batch_size)
+    x_batch = x_train[batch_mask]
+    t_batch = t_train[batch_mask]
+
+    # 기울기 계산
+    # grad = network.numerical_gradient(x_batch, t_batch)
+    grad = network.gradient(x_batch, t_batch)
+
+    # 매개변수 갱신
+    for key in ('W1', 'b1', 'W2', 'b2'):
+        network.params[key] -= learning_rate * grad[key]
+
+    # 학습 경과 기록
+    loss = network.loss(x_batch, t_batch)
+    train_loss_list.append(loss)
+```
+- 미니배치 학습이란 훈련 데이터 중 일부를 무작위로 꺼내고(미니배치), 그 미니배치에 대해서 경사법으로
+매개변수를 갱신하는 것이다.
+- 앞의 TwoLayerNet 클래스와 MNIST 데이터셋을 사용하여 학습을 수행하였다.
+- 여기서는 미니배치 크기를 100으로 했다.
+- 즉 매번 60,000개의 훈련 데이터에서 임의로 100개의 데이터(이미지 데이터와 정답 레이블 데이터)를 추려낸다.
+- 그리고 그 100개의 미니배치를 대상으로 SGD를 수행해 매개변수를 갱신한다.
+- 경사법에 의한 갱신 횟수(반복 횟수)를 10,000번으로 설정했고 갱신할 때마다 훈련 데이터에 대한 손실 함수를 계산하고
+그 값을 배열에 추가했다.
+- 이 손실 함수의 값이 변화하는 추이를 그래프로 나타내면 다음과 같이 된다.
+
+<img src="../dataset/mdImage/그림4-11.png">
+
+- 그림을 보면 학습 횟수가 늘어가면서 손실 함수의 값이 줄어든다.
+- 이는 학습이 잘 되고 있다는 뜻으로, 신경망의 가중치 매개변수가 서서히 데이터에 적응하고 있음을 의미한다.
+- 다시말해 데이터를 반복해서 학습함으로써 최적 가중치 매개변수로 서서히 수렴하고 있다는 뜻이다.
+
+
+### 4.5.3 시험 데이터로 평가하기
+- 아까 그림에서 학습을 반복함으로써 손실 함수의 값이 서서히 내려가는 것을 확인했다.
+- 하지만 이는 '훈련 데이터의 미니배치에 대한 손실 함수'의 값이 내려가는 것이다.
+- 신경망 학습에서는 훈련 데이터 외의 데이터를 올바르게 인식하는지를 확인해야 한다.
+- 즉, '오버피팅'을 일으키지 않는지 확인해야 한다.
+- 오버피팅되었다는 것은 훈련 데이터에 포함된 이미지만 제대로 구분하고, 그렇지 않은 이미지는 식별할 수 없다는 뜻이다.
+- 신경망 학습의 원래 목표는 범용적인 능력을 익히는 것이고 이를 위해 다음 구현에서는 학습 도중 정기적으로
+훈련 데이터와 시험 데이터를 대상으로 정확도를 기록한다.
+- 여기에서는 1에폭별로 훈련 데이터와 시험 데이터에 대한 정확도를 기록할 것이다.
+
+> `에폭(epoch)`은 하나의 단위다. 1에폭은 학습에서 훈련데이터를 모두 소진했을 때의 횟수에 해당한다.
+> 예컨대 훈련 데이터 10,000개를 100개의 미니배치로 학습할 경우, 확률적 경사 하강법 (SGD)를 100회
+> 반복하면 모든 훈련 데이터를 '소진'한 게 된다. 이 경우 100회가 1에폭이 된다.
+
+- 그럼 앞의 구현에서 조금만 수정해보겠다.
+
+```python
+train_acc_list = []
+test_acc_list = []
+```
+
+- 1에폭마다 train data와 test data에 대한 정확도 값을 저장하는 list를 선언 하였다.
+- 
+```python
+# 1에폭당 반복 수
+iter_per_epoch = max(train_size / batch_size, 1)
+```
+
+- 또한 1에폭당 반복 수는 (훈련 데이터의 양 / 배치사이즈 ) 로 계산하였다.
+
+```python
+# 1에폭당 정확도 계산
+    if i % iter_per_epoch == 0:
+        train_acc = network.accuracy(x_train, t_train)
+        test_acc = network.accuracy(x_test, t_test)
+        train_acc_list.append(train_acc)
+        test_acc_list.append(test_acc)
+        print("train acc, test acc | " + str(train_acc) + ", " + str(test_acc))
+```
+
+- 이렇게 훈련이 진행됨에 따라 1에폭당 훈련 데이터와 시험 데이터의 정확도를 계산하여 출력하는 함수를 추가하였다.
+- 다음은 모든 코드를 구현 했을 결과다 - train_neuralnet.py
+```
+결과
+
+train acc, test acc | 0.09863333333333334, 0.0958
+train acc, test acc | 0.7834666666666666, 0.7892
+train acc, test acc | 0.8744166666666666, 0.8795
+train acc, test acc | 0.8966666666666666, 0.9008
+train acc, test acc | 0.9070666666666667, 0.9108
+train acc, test acc | 0.9138833333333334, 0.9158
+train acc, test acc | 0.9185166666666666, 0.9204
+train acc, test acc | 0.9239666666666667, 0.9245
+train acc, test acc | 0.9272333333333334, 0.9281
+train acc, test acc | 0.9298666666666666, 0.9297
+train acc, test acc | 0.9335833333333333, 0.9341
+train acc, test acc | 0.9363666666666667, 0.9354
+train acc, test acc | 0.9382333333333334, 0.9383
+train acc, test acc | 0.9408666666666666, 0.9403
+train acc, test acc | 0.9429833333333333, 0.9421
+train acc, test acc | 0.9443, 0.9425
+train acc, test acc | 0.9465666666666667, 0.9445
+```
+
+- 이 예에서는 1에폭마다 모든 훈련 데이터와 시험 데이터에 대한 정확도를 계산하고, 그 결과를 기록한다.
+- 정확도를 1에폭마다 계산하는 이유는 for 문 안에서 매번 계산하기에는 시간이 오래걸릴뿐더러 그렇게까지 자주 기록할
+필요가 없다. 더 큰 관점에서 그 추이를 알 수 있으면 충분하다.
+- 이를 시각적으로 보여주기위해 그림을 그려보자
+
+```python
+# 그래프 그리기
+markers = {'train': 'o', 'test': 's'}
+x = np.arange(len(train_acc_list))
+plt.plot(x, train_acc_list, label='train acc')
+plt.plot(x, test_acc_list, label='test acc', linestyle='--')
+plt.xlabel("epochs")
+plt.ylabel("accuracy")
+plt.ylim(0, 1.0)
+plt.legend(loc='lower right')
+plt.show()
+```
+
+<img src="../dataset/mdImage/그림4-12.png">
+
+- 훈련 데이터에 대한 정확도를 실선으로, 시험 데이터에 대한 정확도를 점선으로 그렸다.
+- 보다시피 에폭이 진행될수록 (학습이 진행될수록) 훈련 데이터와 시험 데이터를 사용하고 평가한 정확도가 모두
+좋아졌다.
+- 또한 두 정확도는 겹쳐 있는 것으로 보아 차이가 차이가 거의 없다.
+- 다시 말해 이번 학습에서는 오버 피팅이 일어나지 않았다 !!
+
+> 그렇다면 오버피팅이 일어난다면 그래프는 어떻게 달라질까 ? <br>
+> 훈련이란 훈련 데이터에 대한 정확도를 높이는 것이므로 정확도는 에폭을 반복할 수록 높아진다. 
+> 반면 훈련 데이터에 지나치게 적응하면, 즉 오버피팅되면 훈련 데이터와는 다른 데이터를 보면 잘못된 판단을
+> 하기 시작한다. 어느 순간부터 시험 데이터에 대한 정확도가 점차 떨어지기 시작한다는 뜻인데 이 순간부터
+> 오버피팅이 시작되는 것이다. 이 순간을 포착해 학습을 중단하면 오버피팅을 효과적으로 예방할 수 있다.
+> 이 기법을 조기 종료(early stopping)라 하며, 대표적인 오버피팅 예방법 중 하나이다.
+
+
+
+## 4.6 정리
+- 이번 장에서는 신경망 학습에 대해서 설명했다.
+- 가장 먼저 신경망이 학습을 수행할 수 있도록 손실 함수라는 '지표'를 도입했다.
+- 이 손실 함수를 기준으로 그 값이 가장 작아지는 가중치 매개변수 값을 찾나내는 것이 신경망 학습의 목표다.
+- 또, 가능한 한 작은 손실 함수의 값을 찾는 방법으로 경사법을 소개했다.
+- 이번 방에서 배운 내용
+  - 기계학습에서 사용하는 데이터셋은 훈련 데이터와 시험 데이터로 나눠 사용한다.
+  - 훈련 데이터로 학습한 모델의 범용 능력을 시험 데이터로 평가한다.
+  - 신경망 학습은 손실 함수를 지표로, 손실 함수의 값이 작아지는 방향으로 가중치 매개변수를 갱신한다.
+  - 가중치 배개변수를 갱신할 때는 가중치 매개변수의 기울기를 이용하고, 기울어진 방향으로 가중치의 값을 갱신
+  하는 작업을 반복한다.
+  - 아주 작은 값을 주었을 때의 차분으로 미분하는 것을 수치 미분이라고 한다.
+  - 수치 미분을 이용해 가중치 매개변수의 기울기를 구할 수 있다.
+  - 수치 미분을 이용한 계산에는 시간이 걸리지만, 그 구현은 간단하다. 한편, 다음 장에서 구현하는 (다소 복잡한)
+  오차역전파법은 기울기를 고속으로 구할 수 있다.
 
 
 
