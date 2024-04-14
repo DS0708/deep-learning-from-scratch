@@ -364,3 +364,31 @@ print(numerical_diff(function_1, 10))
 
 
 ### 4.3.3 편미분
+- f(x0, x1) = x0^2 + x1^2 일때 편미분 구하기
+- x0 = 3, x1 = 4 일때 x0에 대한 편미분 구하기
+```python
+def function_tmp1(x0):
+    return x0*x0 + 4.0**2.0
+
+print(numerical_diff(function_tmp1,3.0))
+```
+```
+결과
+
+6.00000000000378
+```
+- x0 = 3, x1 = 4 일때 x1에 대한 편미분 구하기
+```python
+def function_tmp2(x1):
+    return 3.0**2.0 + x1*x1
+
+print(numerical_diff(function_tmp2,4.0))
+```
+```
+결과
+
+7.999999999999119
+```
+
+
+## 4.4 기울기
