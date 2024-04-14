@@ -663,6 +663,120 @@ dW = numerical_gradient(f, net.W)
 
 ## 4.5 학습 알고리즘 구현하기
 
+- 신경망 학습의 순서를 확인해보자
+  - 전제 : 신경망에는 적응 가능한 가중치와 편향이 있고, 이 가중치와 편향을 훈련 데이터에 적응하도록 조정
+  하는 과정을 '학습'이라 한다. 신경망 학습은 다음과 같이 4단계로 수행한다.
+  - 1단계 - 미니배치 : 훈련 데이터 중 일부를 무작위로 가져온다. 이렇게 선별한 데이터를 미니배치라 하며,
+  그 미니배치의 손실 함수 값을 줄이는 것이 목표이다.
+  - 2단계 - 기울기 산출 : 미니배치의 손실 함수 값을 줄이기 위해 각 가중치 매개변수의 기울기를 구한다.
+  기울기는 손실 함수의 값을 가장 작게 하는 방향을 제시한다.
+  - 3단계 - 매개변수 갱신 : 가중치 매개변수를 기울기 방향으로 아주 조금 갱신한다.
+  - 4단계 - 반복 : 1 ~ 3 단계를 반복한다.
+
+- 이것이 신경망 학습이 이뤄지는 순서이며 이는 경사 하강법으로 매개변수를 갱신하는 방법이다.
+- 이때 데이터를 미니배치로 무작위로 선정하기 때문에 `확률적 경사 하강법(stochastic gradient descent, SGD)`라고
+부른다.
+- 대부분의 딥러닝 프레임워크는 확률적 경사 하강법의 영어 머리글자를 딴 `SGD`라는 함수로 이 기능을 구현하고 있다.
+- 그럼 이제 실제로 손글씨 숫자를 학습하는 신경망을 구현해보자. 
+- 여기에서는 2층 신경망(은닉층이 1개인 네트워크)을 대상으로 MNIST 데이터셋을 사용하여 학습을 수행할 예정이다 .
+
+
+### 4.5.1 2층 신경망 클래스 구현하기
+
+```python
+import sys, os
+
+sys.path.append(os.pardir)  # 부모 디렉터리의 파일을 가져올 수 있도록 설정
+from common.functions import *
+from common.gradient import numerical_gradient
+
+
+class TwoLayerNet:
+
+    def __init__(self, input_size, hidden_size, output_size, weight_init_std=0.01):
+        # 가중치 초기화
+        self.params = {}
+        self.params['W1'] = weight_init_std * np.random.randn(input_size, hidden_size)
+        self.params['b1'] = np.zeros(hidden_size)
+        self.params['W2'] = weight_init_std * np.random.randn(hidden_size, output_size)
+        self.params['b2'] = np.zeros(output_size)
+
+    def predict(self, x):
+        W1, W2 = self.params['W1'], self.params['W2']
+        b1, b2 = self.params['b1'], self.params['b2']
+
+        a1 = np.dot(x, W1) + b1
+        z1 = sigmoid(a1)
+        a2 = np.dot(z1, W2) + b2
+        y = softmax(a2)
+
+        return y
+
+    # x : 입력 데이터, t : 정답 레이블
+    def loss(self, x, t):
+        y = self.predict(x)
+
+        return cross_entropy_error(y, t)
+
+    def accuracy(self, x, t):
+        y = self.predict(x)
+        y = np.argmax(y, axis=1)
+        t = np.argmax(t, axis=1)
+
+        accuracy = np.sum(y == t) / float(x.shape[0])
+        return accuracy
+
+    # x : 입력 데이터, t : 정답 레이블
+    def numerical_gradient(self, x, t):
+        loss_W = lambda W: self.loss(x, t)
+
+        grads = {}
+        grads['W1'] = numerical_gradient(loss_W, self.params['W1'])
+        grads['b1'] = numerical_gradient(loss_W, self.params['b1'])
+        grads['W2'] = numerical_gradient(loss_W, self.params['W2'])
+        grads['b2'] = numerical_gradient(loss_W, self.params['b2'])
+
+        return grads
+```
+
+- 코드가 좀 길지만 앞에서 다룬 신경망의 순전파 처리 구현과 공통되는 부분이 많아 새로운 내용은 딱히 없다.
+- 우선 이 클래스가 사용하는 변수와 메서드를 정리해보겠다.
+- 중요한 변수를 선멸하여 [표 4-1]에 정리했고, 메서드들은 모두를 [표 4-2]에 정리했다.
+
+<img src="../dataset/mdImage/표4-1.png">
+<img src="../dataset/mdImage/표4-2.png">
+
+- TwoLayerNet 클래스는 딕셔너리인 params와 grads를 인스턴스 변수로 갖는다.
+- params 변수에는 가중치 매개변수가 저장되는데, 예를 들어 1번째 층의 가중치 매개변수는 param['W1'] 키에
+넘파이 배열로 저장된다.
+- 이와 같이 params 변수에는 이 신경망에 필요한 매개변수가 모두 저장되며 params 변수에 저장된 가중치 
+매개변수가 예측 처리(순방향 처리)에서 사용된다.
+- 참고로 예측 처리는 다음과 같이 실행할 수 있다.
+  ```python
+  x = np.random.rand(100, 784) # 더미 입력 데이터 100장 분량
+  y = net.predict(x)
+  ```
+- grads 변수에는 params 변수에 대응하는 각 매개변수의 기울기가 저장된다.
+- 이어서 TwoLayerNet의 메서드를 살펴보자
+  - __init__ 메서드는 클래스를 초기화한다.
+  - 인수는 순서대로 입력층의 뉴런 수, 은닉층의 뉴런 수, 출력층의 뉴런 수 이다.
+  - 예를 들어 손글씨 숫자 인식에서는 크기가 28*28 인 입력 이미지가 총 784개이고, 출력은 10개가 된다.
+  - 따라서 input_size=784, output_size=10으로 지정하고 은닉층의 개수인 hidden_size는 적당한 값을 설정하면 된다.
+  - 이 초기화 메서드에서는 가중치 매개변수도 초기화한다. 
+  - 가중치 매개변수의 초깃값을 무엇으로 설정하냐가 신경망 학습의 성공을 좌우하기도 한다.
+  - 가중치 매개변수의 초기화에 대한 자세한 내용은 나중에 살펴볼 것이다.
+  - 당장은 정규분포를 따르는 난수로, 편향은 0으로 초기화한다고 이야기하고 넘어갈 것이다.
+  - predict()와 accuracy의 구현은 앞에서 본 신경망의 추론 처리와 거의 같으니 설명은 생략하겠다.
+  - loss()는 손실 함수의 값을 계산하는 메서드로 predict()의 결과와 정답 레이블을 바탕으로 교차 엔트로피 오차를 구하도록
+  구현했다.
+  - 남은 numerical_gradient() 메서드는 각 매개변수의 기울기를 계산하며 수치 미분 방식으로 각 매개변수의
+  손실함수에 대한 기울기를 계산한다.
+  - 그리고 코드에는 gradient가 있는데 이는 다음 장에서 구현할 메서드로 오차역전파법을 사용하여 기울기를 효율
+  적이고 빠르게 계산하는 함수이다.
+
+
+### 4.5.2 미니배치 학습 구현하기
+
 
 
 
