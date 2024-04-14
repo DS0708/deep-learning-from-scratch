@@ -17,3 +17,5 @@ t_batch = t_train[batch_mask]
 
 print(x_batch.shape)
 print(t_batch.shape)
+
+print(x_batch.shape[0])
