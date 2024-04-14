@@ -318,7 +318,7 @@ def numerical_diff(f,x):
 ```python
 def numerical_diff(f,x):
     h = 1e-4 #0.0001
-    return (f(x+h) - f(x-h)) / 2*h
+    return (f(x+h) - f(x-h)) / (2*h)
 ```
 
 > 여기에서 하는 것처럼 아주 작은 차분으로 미분하는 것을 수치미분 이라고 한다.<br>
@@ -329,3 +329,38 @@ def numerical_diff(f,x):
 
 
 ### 4.3.2 수치 미분의 예
+
+- y = 0.01x^2 + 0.1x 의 미분을 구해보자
+
+```python
+import numpy as np
+import matplotlib.pylab as plt
+def numerical_diff(f,x):
+    h = 1e-4 #0.0001
+    return (f(x+h) - f(x-h)) / (2*h)
+
+def function_1(x):
+    return 0.01*x**2 + 0.1*x
+
+x = np.arange(0.0, 20.0, 0.1)
+y = function_1(x)
+plt.xlabel("x")
+plt.ylabel("f(x)")
+plt.plot(x,y)
+plt.show()
+
+print(numerical_diff(function_1,5))
+print(numerical_diff(function_1, 10))
+```
+```
+결과
+
+0.1999999999990898
+0.2999999999986347
+```
+
+- f(x)의 해석적 해는 0.02x + 0.1 이므로 x가 5와 10일 때의 진정한 미분은 0.2 와 0.3이다
+- 결과를 보면 오차가 매우 적음을 알 수 있다.
+
+
+### 4.3.3 편미분
