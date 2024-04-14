@@ -555,5 +555,118 @@ $$
 \end{bmatrix}
 $$
 
+- dL/dW의 각 원소는 각각의 원소에 관한 편미분이다.
+- 예를 들어 1행 1번째 원소인 dL/dw11 은 w11을 조금 변경했을 때 손실 함수 L이 얼마나 변화하느냐를 나타낸다.
+- 여기서 중요한 점은 dL/dW 와 W는 형상이 2*3으로 서로 같다는 것이다.
+- 그럼 이제 간단한 신경망을 예로 들어 실제 기울기를 구하는 코드를 구현해보자.
+
+```python
+# coding: utf-8
+import sys, os
+sys.path.append(os.pardir)  # 부모 디렉터리의 파일을 가져올 수 있도록 설정
+import numpy as np
+from common.functions import softmax, cross_entropy_error
+from common.gradient import numerical_gradient
+
+
+class simpleNet:
+    def __init__(self):
+        self.W = np.random.randn(2,3) # 정규분포로 초기화
+
+    def predict(self, x):
+        return np.dot(x, self.W)
+
+    def loss(self, x, t):
+        z = self.predict(x)
+        y = softmax(z)
+        loss = cross_entropy_error(y, t)
+
+        return loss
+```
+
+- simpleNet 클래스는 형상이 2*3인 가중치 매개변수 하나를 인스턴스 변수로 갖는다.
+- 메서드는 2개인데, 하나는 예측을 수행하는 predict(x)이고, 다른 하나는 손실 함수의 값을 구하는 loss(x,t)이다.
+- 여기에서 인수 x는 입력 데이터, t는 정답 레이블이다.
+- 그럼 이 simpleNet를 이용해 몇 가지 시험을 해보자
+
+```python
+net = simpleNet()
+
+print(net.W) # 가중치 매개변수
+print()
+
+x = np.array([0.6, 0.9])
+p = net.predict(x)
+print(p)
+print()
+print(np.argmax(p)) # 최댓값의 인덱스
+print()
+
+t = np.array([0, 0, 1]) # 정답 레이블
+print(net.loss(x,t))
+```
+```
+결과
+
+[[ 1.80663453 -1.40739049 -0.83358453]
+ [ 0.87749543 -1.22620783  0.05657521]]
+
+[ 1.87372661 -1.94802134 -0.44923303]
+
+0
+
+2.4361734856634247
+```
+
+- 이어서 기울기를 구해보자
+- 지금까지처럼 numerical_gradient(f,x)를 사용하여 구한다.
+- 여기에서 정의한 f(W) 함수의 인수 W는 더미(dummy)로 만든 것이다.
+- numerical_gradient(f,x) 내부에서 f(x)를 실행하는데, 그와의 일관성을 위해 f(W)를 정의했다.
+- 참고로 여기서 numerical_gradient()는 가중치 매개변수 W가 다차원 배열을 처리할 수 있도록 앞의
+구현에서 조금 수정했다.
+- 다차원 배열 처리 외에는 수정하지 않았으니 설명은 생략하겠다. (common/gradient.py 참고)
+
+```python
+def f(W):
+    return net.loss(x,t)
+
+dW = numerical_gradient(f, net.W)
+print(dW)
+```
+```
+결과
+
+[[ 0.08152526  0.20893843 -0.29046368]
+ [ 0.12228788  0.31340764 -0.43569553]]
+```
+
+- numerical_gradient(f, x)의 인수 f는 함수, x는 함수 f의 인수다.
+- 그래서 여기에는 new.W를 인수로 받아 손실 함수를 계산하는 새로운 함수 f를 정의했다.
+- 그리고 이 새로 정의한 함수를 numerical_gradient에 넘기면 가중치 매개변수에 대한 손실함수의 기울기,
+즉 아까 정의한 dL/dW 와 같은 행렬이 나오게 되는 것이다.
+- dL/dw11 의 값은 대략 0.08이다.
+- 이는 w11을 h만큼 늘리면 손실 함수의 값은 0.08h 만큼 증가한다는 뜻이다.
+- 마찬가지로  dL/dw23을 h만큼 늘리면 손실 함수의 값은 0.43h 만큼 감소한다.
+- 그래서 손실함수를 줄인다는 관점에서는 w11 은 음의 방향으로 갱신해야 하고 w23은 양의 방향으로 갱신해야 한다.
+- 또한 갱신되는 양의 관점에서 보면, dL/dw23이 w11보다 크게 기여한다는 사실도 알 수 있다.
+
+- 참고로 이 구현에서는 새로운 함수를 정의하는데 "def f(x):..."와 같은 문법을 사용하였는데 이는 람다 기법을 쓰면 더 편리하다.
+
+```python
+f = lambda w: net.loss(x, t)
+dW = numerical_gradient(f, net.W)
+```
+
+- 신경망의 기울기를 구한 다음에는 경사법에 따라 가중치 배개변수를 갱신하기만 하면 된다.
+- 다음 절에서는 2층 신경망을 대상으로 학습 과정 전체를 구현한다.
+
+
+## 4.5 학습 알고리즘 구현하기
+
+
+
+
+
+
 
 
