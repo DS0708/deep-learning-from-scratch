@@ -398,13 +398,53 @@ dTax: 650
 
 
 ### 5.5.1 ReLU 계층
-- 먼저 ReLU의 수식을 보자
+- 먼저 ReLU의 수식과 x에 대한 y의 미분은 다음과 같고 ReLU계층의 계산 그래프는 다음과 같이 표현할 수 있다.
 
-y = \begin{cases} 
-x & \text{if } x > 0 \\
-0 & \text{otherwise} 
-\end{cases}
+<img src="../dataset/mdImage/그림5-18.png">
 
-- 그리고 ReLU의 x에 대한 y의 미분은 다음과 같다.
+- 이제 이 ReLU 계층을 구현해보자
+- 신경망 계층의 forward()와 backward() 함수는 넘파이 배열을 인수로 받는다고 가정한다.
+- common/layers.py 에 존재한다.
+
+```python
+class Relu:
+    def __init__(self):
+        self.mask = None
+
+    def forward(self, x):
+        self.mask = (x <= 0)
+        out = x.copy()
+        out[self.mask] = 0
+
+        return out
+
+    def backward(self, dout):
+        dout[self.mask] = 0
+        dx = dout
+
+        return dx
+```
+
+- mask라는 인스턴스 변수를 가지고 mask 는 True/False로 구성된 넘파이 배열이다.
+- 순전파의 입력인 x의 원소 값이 0 이하인 인덱스는 True, 그 외(0보다 큰 원소)는 False로 유지한다.
+- 예컨대 mask 변수는 다음 예와 같이 True/False로 구성된 넘파이 배열을 유지한다.
+
+```
+x = np.array([[1.0, -0.5], [-2.0, 3.0]])
+mask = (x <= 0) 일때
+print(mask) 결과
+
+[[False True]
+[True False]]
+```
+
+- 순전파 때의 입력 값이 0 이하면 역전파 때의 값은 0이 되어야 한다.
+- 그래서 역전파 때는 순전파 때 만들어준 mask를 이용하여 maks 원소가 True인 곳에는 상류에서 전파된 dout을
+0으로 설정하였다.
+
+> ReLU 계층은 전기 회로의 '스위치'에 비유할 수 있다. 순전파 때 전류가 흐르고 있으면 스위치를 ON으로 하고,
+> 흐르지 않으면 OFF로 하는 것과 똑같다. 역전파 때는 스위치가 ON 이라면 전류가 그대로 흐르고, OFF라면
+> 더 이상 흐르지 않는다.
+
 
 
