@@ -231,5 +231,166 @@
 
 
 ## 5.4 단순한 계층 구현하기
+- 이번 절에서는 지금까지 보아온 '사과 쇼핑' 예를 파이썬으로 구현한다.
+- 계산 그래프의 곱셈 노드를 'MulLayer'
+- 덧셈 노드를 'AddLayer'라는 이름으로 구현한다.
+
+> 다음 절에서는 신경망을 구성하는 '계층' 각각을 하나의 클래스로 구현한다. 여기에서 말하는 '계층'이란
+> 신경망의 기능 단위다. 예를 들어 시그모이드 함수를 위한 Sigmoid, 행렬 곱을 위한 Affine 등의 기능을
+> 계층 단위로 구현한다. 그래서 이번 절에서도 곱셈 노드와 덧셈 노드를 '계층' 단위로 구현한다.
+
+
+### 5.4.1 곱셈 계층
+- 모든 계층은 forward()와 backward()라는 공통의 메서드(인터페이스)를 갖도록 구현할 것이다.
+- 곱셉계층은 MulLayer라는 이름의 클래스로 다음과 같이 구현하였다.
+
+
+```python
+class MulLayer:
+    def __init__(self):
+        self.x = None
+        self.y = None
+    
+    def forward(self, x, y):
+        self.x = x
+        self.y = y
+        out = x * y
+        
+        return out
+    
+    def backward(self, dout):
+        dx = dout * self.y  # x와 y를 바꾼다.
+        dy = dout * self.x 
+        
+        return dx, dy
+```
+
+- __init__()에서는 인스턴스 변수인 x,y를 초기화 하였고 이 두 변수는 순전파 시의 입력 값을 유지하기
+위해 사용한다.
+- backward()에서는 상류에서 넘어온 미분(dout)에 순전파 떄의 값을 '서로 바꿔'곱한 후 하류로 흘린다.
+
+
+- 이 MulLayer를 이용하여 앞에서 본 '사과 쇼핑'을 구현해보자
+
+```python
+from layer_naive import *
+
+
+apple = 100
+apple_num = 2
+tax = 1.1
+
+mul_apple_layer = MulLayer()
+mul_tax_layer = MulLayer()
+
+# forward
+apple_price = mul_apple_layer.forward(apple, apple_num)
+price = mul_tax_layer.forward(apple_price, tax)
+
+# backward
+dprice = 1
+dapple_price, dtax = mul_tax_layer.backward(dprice)
+dapple, dapple_num = mul_apple_layer.backward(dapple_price)
+
+print("price:", int(price))
+print("dApple:", dapple)
+print("dApple_num:", int(dapple_num))
+print("dTax:", dtax)
+```
+```
+결과
+
+price: 220
+dApple: 2.2
+dApple_num: 110
+dTax: 200
+```
+
+- backward() 호출 순서는 forward() 때와는 반대이다.
+- 또, backward()가 받는 인수는 '순전파의 출력에 대한 미분'임에 주의하자 !
+
+
+### 5.4.2 덧셈 계층
+- 아까 봤던 '사과와 귤 쇼핑'문제를 해결해보자
+- 먼저 AddLayer를 구성해보자
+
+```python
+class AddLayer:
+    def __init__(self):
+        pass
+
+    def forward(self, x, y):
+        out = x + y
+
+        return out
+
+    def backward(self, dout):
+        dx = dout * 1
+        dy = dout * 1
+
+        return dx, dy
+```
+
+- 덧셈 계층에서는 초기화가 필요 없으니 __init__()에서는 아무 일도 하지 않는다.
+- 참고로 pass 가 아무것도 하지말라는 명령어이다.
+- backward()에서는 상류에서 내려온 미분 값을 그대로 하류로 흘려준다.
+
+
+- 이제 '사과 2개와 귤 3개 구입'문제를 해결해보자
+```python
+from layer_naive import *
+
+apple = 100
+apple_num = 2
+orange = 150
+orange_num = 3
+tax = 1.1
+
+# layer
+mul_apple_layer = MulLayer()
+mul_orange_layer = MulLayer()
+add_apple_orange_layer = AddLayer()
+mul_tax_layer = MulLayer()
+
+# forward
+apple_price = mul_apple_layer.forward(apple, apple_num)  # (1)
+orange_price = mul_orange_layer.forward(orange, orange_num)  # (2)
+all_price = add_apple_orange_layer.forward(apple_price, orange_price)  # (3)
+price = mul_tax_layer.forward(all_price, tax)  # (4)
+
+# backward
+dprice = 1
+dall_price, dtax = mul_tax_layer.backward(dprice)  # (4)
+dapple_price, dorange_price = add_apple_orange_layer.backward(dall_price)  # (3)
+dorange, dorange_num = mul_orange_layer.backward(dorange_price)  # (2)
+dapple, dapple_num = mul_apple_layer.backward(dapple_price)  # (1)
+
+print("price:", int(price))
+print("dApple:", dapple)
+print("dApple_num:", int(dapple_num))
+print("dOrange:", dorange)
+print("dOrange_num:", int(dorange_num))
+print("dTax:", dtax)
+```
+```
+결과
+
+price: 715
+dApple: 2.2
+dApple_num: 110
+dOrange: 3.3000000000000003
+dOrange_num: 165
+dTax: 650
+```
+
+- 코드가 길어졌지만 하나하나의 명령은 단순하다.
+- 그냥 필요한 계층을 만들어 순전파 메서드를 호출한다.
+- 그리고 순전파와 반대 순서로 역전파 매서드를 호출하면 끝이다~
+
+> 이처럼 계산 그래프에서의 계층(여기에서는 곱셈과 덧셈)은 쉽게 구현 가능하며, 이를 사용해 복잡한
+> 미분도 계산할 수 있다. 다음 절에서는 신경망에서 사용하는 계층을 구현할 것입니다.
+
+
+## 5.5 활성화 함수 계층 구현하기
 
 
