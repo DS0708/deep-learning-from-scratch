@@ -794,3 +794,9 @@ class SoftmaxWithLoss:
 
 
 
+## 5.7 오차역전파법 구현하기
+
+- 
+
+
+
