@@ -608,9 +608,10 @@ print(Y.shape)
 - 먼저 dL/dX, dL/dW 의 형상에 대하여 살펴보자. 
 - X와 dL/dX의 형상이 같다는 것은 다음 식을 보면 이해할 수 있다.
 
+$$
 \(X = (x_0, x_1, \ldots, x_n)\)
 \(\frac{dL}{dX} = \left(\frac{dL}{dx_0}, \frac{dL}{dx_1}, \ldots, \frac{dL}{dx_n}\right)\)
-
+$$
 
 
 
