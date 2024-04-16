@@ -610,6 +610,8 @@ print(Y.shape)
 
 $$
 \(X = (x_0, x_1, \ldots, x_n)\)
+$$
+$$
 \(\frac{dL}{dX} = \left(\frac{dL}{dx_0}, \frac{dL}{dx_1}, \ldots, \frac{dL}{dx_n}\right)\)
 $$
 
