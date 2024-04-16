@@ -613,7 +613,7 @@ X = (x_0, x_1, \ldots, x_n)
 $$
 
 $$
-\Delta X = \left(\frac{\Delta L}{dx_0}, \frac{\Delta L}{dx_1}, \ldots, \frac{\Delta L}{dx_n}\right)
+\frac{\partial L}{\partial X} = \left(\frac{\partial L}{\partial x_0}, \frac{\partial L}{\partial x_1}, \ldots, \frac{\partial L}{\partial x_n}\right)
 $$
 
 
