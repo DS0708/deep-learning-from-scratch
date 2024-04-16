@@ -616,7 +616,28 @@ $$
 \frac{\partial L}{\partial X} = \left(\frac{\partial L}{\partial x_0}, \frac{\partial L}{\partial x_1}, \ldots, \frac{\partial L}{\partial x_n}\right)
 $$
 
+- X와 dL/dX 의 형상이 같다는 것을 증명했으니 하나씩 살펴보자.
+- 먼저 '+' 노드에서 상류에서는 dL/dY 가 흘러오며 그대로 흘러보내주면 된다.
+- 'dot' 노드가 문제인데, 이렇게 생각할 수 있다.
+  - T = X * W
+  - 위쪽에는 dL/dY * dY/dT * dT/dX
+  - 아래쪽은 dL/dY * dY/dT * dT/dW 를 하류로 흘러보내준다고 생각하면된다.
+  - 근데 여기서 dY/dT = 1 이므로 위쪽, 아래쪽 각각 dL/dY * dT/dX, dL/dY * dT/dW 를 하류로 보내주면 된다.
+  - 그렇다면 이렇게 쓸 수도 있다.
+  - dL/dX = dL/dY * dT/dX
+  - dL/dW = dL/dY * dT/dW
+  - 이때 형상에 주의해서 생각해보면, dL/dX의 형상은 위에서 증명했듯이 X의 형상과 동일하여 (2,)이 나오고
+  - dL/dW의 형상은 W의 형상과 동일하여 (2,3) 이 나와야 한다.
+  - 그렇다면 dL/dY 의 형상은 Y의 형상, 즉 출력의 형상과 동일하므로 (3,) 이다.
+  - 따라서 dL/dX 에서는 (3,)에 (3,2) 가 곱해져야 하고
+  - dL/dW 에서는  (2,1)에 (1,3)가 곱해져야 한다.
+  - 그리고 실제로 전개해보면 위의 그림에 있는 식이 나온다. (dL/dX, dL/dW의 전개를 말하는 것임) 
+- 마지막으로 정리한 식이다.
 
+<img src="../dataset/mdImage/그림5-26.png" width="900">
+
+
+### 배치용 Affine 계층
 
 
 
