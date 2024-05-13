@@ -232,9 +232,136 @@ CNN에서는 padding, stride 등 CNN 고유의 용어가 등장하며 각 계층
 > im2col이라는 '트릭'이 문제를 단순하게 만들어준다.
 
 ### 7.4.2 im2col로 데이터 전개하기
+- 합성곱 연산을 구현하려면 for문을 여러 개 돌려야하지만 넘파이에 for문을 사용하면 성능이 떨어지고 너무 귀찮기
+때문에 for문 대신에 im2col이라는 편의 함수를 사용해 간단하게 구현해보겠다.
+- im2col은 입력 데이터를 필터링(가중치 계산)하기 좋게 전개하는(펼치는) 함수다.
+- 다음 그림과 같이 3차원 입력 데이터에 im2col을 적용하면 2차원 행렬로 바뀐다. 정확히는 배치 안의 데이터 수까지
+포함한 4차원 데이터를 2차원으로 변환한다.
+
+  <img src="../dataset/mdImage/그림7-17.png" width="400">
+
+- im2col은 필터링하기 좋게 입력 데이터를 전개한다. 구체적으로는 다음 그림과 같이 입력 데이터에서
+필터를 적용하는 영역(3차원 블록)을 한 줄로 늘여놓는다.
+- 이 전개를 필터를 적용하는 모든 영역에서 수행하는게 im2col이다.
+
+  <img src="../dataset/mdImage/그림7-18.jpeg" width="400">
+
+- 위의 그림에서는 보기에 좋게 스트라이드를 크게 잡아 필터의 적용 영역이 겹치지 않도록 했지만, 실제 상황에서는 
+영역이 겹치는 경우가 대부분이다.
+- 필터 적용 영역이 겹치게 되면 im2col로 전개한 후의 원소 수가 원래 블록의 원소 수보다 많아진다. 그래서 im2col
+을 사용해 구현하면 메모리를 더 많이 소비한다는 단점이 있다.
+- 하지만 컴퓨터는 큰 행렬을 묶어서 계산하는데 탁월하기 때문에 문제를 행렬 계산으로 만들면 선형 대수 라이브러리를 활용해
+효율을 높일 수 있다.
+
+> im2col은 'image to column'라는 뜻이다. 카페(Caffe)와 체이너(Chainer) 등의 딥러닝 프레임워크는
+> im2col이라는 이름의 함수를 만들어 합성곱 계층을 구현할 때 이용하고 있다.
+
+- im2col로 입력 데이터를 전개한 다음에 합성곱 계층의 필터(가중치)를 1열로 전개하고, 두 행렬의 곱을 계산하면 된다.
+이는 완전연결 계층의 Affine 계층에서 한 것과 거의 동일하다.
+- 다음 그림은 합성곱 연산의 필터 처리 상세 과정이다. 필터를 세로로 1열로 전개하고, im2col이 전개한 데이터와
+행렬 곱을 계산한다. 마지막으로 출력 데이터를 reshape한다.
+
+  <img src="../dataset/mdImage/그림7-19.png" width="600">
+
+> 위의 그림과 같이 im2col 방식으로 출력한 결과는 2차원이며 CNN은 데이터를 4차원 배열로 저장하므로 reshape
+> 하는 과정이 필요하다. 이상이 합성곱 계층의 구현 흐름이다.
 
 
 ### 7.4.3 합성곱 계층 구현하기
+- 여기서는 im2col함수를 제공하며 common/util.py에 존재한다.
+- im2col 함수의 인터페이스를 살펴보자
+  ```
+  im2col(input_data, filter_h, filter_w, stride=1, pad=0)
+  
+  - input_data : (데이터 수, 채널 수, 높이, 너비)의 4차원 배열로 이뤄진 입력 데이터
+  - filter_h : 필터의 높이
+  - filter_w : 필터의 너비
+  - stride : 스트라이드
+  - pad : 패딩
+  ```
+- 이 im2col은 필터 크기, 스트라이드, 패딩을 고려하여 입력 데이터를 2차원 배열로 전개한다. 그럼 실제로 사용해보자
+  ```python
+  import sys, os
+  sys.path.append(os.pardir)
+  from common.util import im2col
+  import numpy as np
+  
+  x1 = np.random.randn(1, 3, 7, 7)
+  col1 = im2col(x1, 5, 5, stride=1, pad=0)
+  print(col1.shape)
+  
+  x2 = np.random.rand(10, 3, 7, 7)
+  col2 = im2col(x2, 5, 5, stride=1, pad=0)
+  print(col2.shape)
+  ```
+  ```
+  결과
+  
+  (9, 75)
+  (90, 75)
+  ```
+  - 첫 번째는 배치 크기가 1, 채널은 3개, 높이 * 너비가 7*7이고, 두 번째는 배치 크기만 10이고 나머지는
+  첫 번째와 동일하다.
+  - im2col 함수를 적용한 두 경우 모두 2번째 차원의 원소는 75개이고 이 값은 필터의 원소 수(채널 3개, 5*5 데이터)와
+  같다.
+  - 또한, 배치 크기가 1일 때는 im2col의 결과의 크기가 (9, 75)이고 10일 때는 그 10배인 (90, 75)
+  크기의 데이터가 저장된다.
+
+
+<br>
+
+- 이제 이 im2col을 사용해 합성곱 계층을 구현해보자. Convolution 이라는 클래스로 구현하겠다.
+  ```python
+  import numpy as np
+  from common.util import im2col
+  
+  class Convolution:
+      def __init__(self, W, b, stride=1, pad=0):
+          self.W = W
+          self.b = b
+          self.stride = stride
+          self.pad = pad
+  
+      def forward(self, x):
+          FN, C, FH, FW = self.W.shape
+          N, C, H, W = x.shape
+          out_h = int(1 + (H + 2*self.pad - FH) / self.stride)
+          out_w = int(1 + (W + 2 * self.pad - FW) / self.stride)
+            
+            # 중요
+          col = im2col(x, FH, FW, self.stride, self.pad)
+          col_W = self.W.reshape(FN, -1).T    # 필터 전개
+          out = np.dot(col, col_W) + self.b
+            # 중요
+  
+          out = out.reshape(N, out_h, out_w, -1).transpose(0, 3, 1, 2)
+  
+          return out
+  ```
+  - 합성곱 계층은 필터(가중치), 편향, 스트라이드, 패딩을 인수로 받아 초기화하며 필터는 (FN, C, FH, FW)의
+  4차원 형상이다.
+  - 여기서 FN은 필터 개수, C는 채널, FH는 필터 높이, FW는 필터 너비다.
+  - 주석으로 '중요'가 처리된 부분을 보면 입력 데이터를 im2col로 전개하고 필터도 reshape를 사용해
+  2차원 배열로 전개한다. 그리고 이렇게 전개한 두 행렬의 곱을 구한다.
+  - 필터를 전개하는 부분은 다음 그림에서 보듯 각 필터 블록을 1줄로 펼처 세운다. 이때 reshape의 두 번째 인수
+  를 -1로 지정했는데, 이는 reshape이 제공하는 편의 기능이다. 
+  - reshape에 -1을 지정하면 다차원 배열의 원소 수가 변환 후에도 똑같이 유지되도록 적절히 묶어준다. 예를 들어
+  앞의 코드에서 (10, 3, 5, 5) 형상을 한 다차원 배열 W의 원소 수는 총 750개이다. 이 배열에 reshape(10, -1)을
+  호출하면 750개의 원소를 10묶음으로, 즉 형상이 (10, 75)인 배열로 만들어 준다.
+  
+  <img src="../dataset/mdImage/그림7-19.png" width="600">
+
+  - 다음으로 forward 구현의 마지막에는 출력 데이터를 적절한 형상으로 바꿔준다. 이때 넘파이의 transpose 함수를
+  사용하는데, 이는 다차원 배열의 축 순서를 바꿔주는 함수이다. 다음 그림과 같이 인덱스(0부터 시작)를 지정하여
+  축의 순서를 변경한다.
+  
+  <img src="../dataset/mdImage/그림7-20.jpeg">
+
+> 이상이 합성곱 계층의 forward 구현이며 im2col 덕분에 완전연결 계층의 Affine 계층과 거의 동일하게
+> 구현할 수 있었다. <br>
+> 다음은 합성곱 계층의 역전파를 구해야 하지만 Affine 계층의 구현과 공통점이 많아 따로 설명하지는 않겠다.
+> 주의할 점은 합성곱 계층의 역전파에서는 im2col을 역으로 처리해야 하는데 이는 col2im 함수를 사용하면 된다.
+> 합성곱 계층의 역전파 구현은 commom/layer.py에 있으니 참고하자.
 
 
 ### 7.4.4 풀링 계층 구현하기
