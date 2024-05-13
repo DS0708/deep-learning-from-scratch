@@ -365,7 +365,62 @@ CNN에서는 padding, stride 등 CNN 고유의 용어가 등장하며 각 계층
 
 
 ### 7.4.4 풀링 계층 구현하기
+- 풀링 계층 구현도 합성곱 계층과 마찬가지로 im2col을 사용해 입력 데이터를 전개한다. 단, 풀링의 경우
+채널 쪽이 독립적이라는 점이 합성곱 계층 때와 다르다. 구체적으로는 다음 그림과 같이 풀링 적용 영역을 채널마다
+독립적으로 전개한다.
 
+  <img src="../dataset/mdImage/그림7-21.png" width="400">
+
+- 일단 이렇게 전개한 후, 전개한 행렬에서 행별 최댓값을 구하고 적절한 형상으로 성형하기만 하면 된다.
+
+  <img src="../dataset/mdImage/그림7-22.png" width="600">
+
+- 이상이 풀링 계층의 forward 처리 흐름이며 다음은 이를 파이썬으로 구현한 코드다.
+  ```python
+  class Pooling:
+      def __init__(self, pool_h, pool_w, stride=1, pad=0):
+          self.pool_h = pool_h
+          self.pool_w = pool_w
+          self.stride = stride
+          self.pad = pad
+  
+          self.x = None
+          self.arg_max = None
+  
+      def forward(self, x):
+          N, C, H, W = x.shape
+          out_h = int(1 + (H - self.pool_h) / self.stride)
+          out_w = int(1 + (W - self.pool_w) / self.stride)
+        # 전개 (1)
+          col = im2col(x, self.pool_h, self.pool_w, self.stride, self.pad)
+          col = col.reshape(-1, self.pool_h * self.pool_w)
+        # 최댓값 (2)
+          arg_max = np.argmax(col, axis=1)
+          out = np.max(col, axis=1)
+        # 성형 (3)
+          out = out.reshape(N, out_h, out_w, C).transpose(0, 3, 1, 2)
+  
+          self.x = x
+          self.arg_max = arg_max
+  
+          return out
+  ```
+  - 풀링 계층은 3단계로 구성
+    1. 입력 데이터를 전개
+    2. 행별 최댓값 구하기
+    3. 적절한 모양으로 성형
+
+
+> 최댓값 계산에는 넘파이의 np.max 메서드를 사용할 수 있다. np.max는 인수로 축(axis)을 지정할 수 있는데,
+> 이 인수로 지정한 축마다 최댓값을 구할 수 있다. 가령 np.max(x, axis=1)와 같이 쓰면 x의 1번째 차원의
+> 축마다 최댓값을 구한다.
+
+
+- 이상이 풀링 계층의 forward 처리다. 이 절에서 선택한 전략을 따라 입력 데이터를 풀링하기 쉬운 형태로
+전개해버리면 그 후의 구현은 간단하다.
+- 풀링 계층의 backward 처리는 관련 사항을 이미 설명했으니 여기에서는 설명을 생략한다. ReLU 계층을 구현할 때
+사용한 max의 역전파를 참고하면 된다.
+- 풀링 계층의 전체 구현은 commom/layer.py에 있다.
 
 
 
