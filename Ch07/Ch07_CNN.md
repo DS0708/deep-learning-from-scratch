@@ -423,10 +423,175 @@ CNN에서는 padding, stride 등 CNN 고유의 용어가 등장하며 각 계층
 - 풀링 계층의 전체 구현은 commom/layer.py에 있다.
 
 
-
-
      
 ## 7.5 CNN 구현하기
+- 위에서 만든 합성곱 계층과 풀링 계층을 조합하여 손글씨 숫자를 인식하는 CNN을 조립해보겠다. 여기에서는
+다음 그림과 같은 CNN을 구현할 예정이다.
+  
+  <img src="../dataset/mdImage/그림7-23.png">
+
+- 이 그림의 CNN 네트워크는 "Convolution-ReLU-Pooling-Affine-ReLU-Affine-Softmax"순으로 흐르며
+이를 SimpleConvNet이라는 이름의 클래스로 구현하겠다. 
+- 우선 SimpleConvNet의 초기화(__init__) 때의 인수를 살펴보자.
+  - input_dim : 입력 데이터(채널 수, 높이, 너비)의 차원
+  - conv_param : 합성곱 계층의 하이퍼파라미터(딕셔너리), 딕셔너리의 키는 다음과 같다.
+    - filter_num : 필터 수
+    - filter_size : 필터 크기
+    - stride : 스트라이드
+    - pad : 패딩
+    - hidden_size : 은닉층(완전연결)의 뉴런 수
+    - output_size : 출력층(완전연결)의 뉴런 수
+    - weight_init_std : 초기화 떄의 가중치 표준편차
+- 여기서 합성곱 계층의 하이퍼파라미터는 딕셔너리 형태로 주어진다.(conv_param) 이것은 필요한 하이퍼파라미터의
+값이 예컨대 {'filter_num':30, 'filter_size':5, 'pad':0, 'stride':1} 처럼 저장된다는 뜻이다.
+
+### SimpleConvNet의 코드 설명
+- 초기화 코드가 길어 3부분으로 나눠 설명하겠다. 참고로 전체 코드는 Ch07/simple_convnet.py에 존재한다.
+
+```python
+class SimpleConvNet:
+    """단순한 합성곱 신경망
+
+    conv - relu - pool - affine - relu - affine - softmax
+
+    Parameters
+    ----------
+    input_size : 입력 크기（MNIST의 경우엔 784）
+    hidden_size_list : 각 은닉층의 뉴런 수를 담은 리스트（e.g. [100, 100, 100]）
+    output_size : 출력 크기（MNIST의 경우엔 10）
+    activation : 활성화 함수 - 'relu' 혹은 'sigmoid'
+    weight_init_std : 가중치의 표준편차 지정（e.g. 0.01）
+        'relu'나 'he'로 지정하면 'He 초깃값'으로 설정
+        'sigmoid'나 'xavier'로 지정하면 'Xavier 초깃값'으로 설정
+    """
+
+    def __init__(self, input_dim=(1, 28, 28),
+                 conv_param={'filter_num': 30, 'filter_size': 5, 'pad': 0, 'stride': 1},
+                 hidden_size=100, output_size=10, weight_init_std=0.01):
+        filter_num = conv_param['filter_num']
+        filter_size = conv_param['filter_size']
+        filter_pad = conv_param['pad']
+        filter_stride = conv_param['stride']
+        input_size = input_dim[1]
+        conv_output_size = (input_size - filter_size + 2 * filter_pad) / filter_stride + 1
+        pool_output_size = int(filter_num * (conv_output_size / 2) * (conv_output_size / 2))
+```
+- 첫 번째 코드이다.
+- 여기에서는 초기화 인수로 주어진 합성곱 계층의 하이퍼파라미터를 나중에 쓰기 쉽도록 딕셔너리에서 꺼낸다.
+- 그리고 합성곱 계층의 출력 크기를 계산한다.
+
+```python
+# 가중치 초기화
+        self.params = {}
+        self.params['W1'] = weight_init_std * \
+                            np.random.randn(filter_num, input_dim[0], filter_size, filter_size)
+        self.params['b1'] = np.zeros(filter_num)
+        self.params['W2'] = weight_init_std * \
+                            np.random.randn(pool_output_size, hidden_size)
+        self.params['b2'] = np.zeros(hidden_size)
+        self.params['W3'] = weight_init_std * \
+                            np.random.randn(hidden_size, output_size)
+        self.params['b3'] = np.zeros(output_size)
+```
+- 두 번째 코드이며 가중치 매개변수를 초기화하는 부분이다.
+- 학습에 필요한 매개변수는 1번째 층의 합성곱 계층과 나머지 두 완전연결 계층의 가중치와 편향이다.
+- 이 매개변수들을 인스턴스 변수 params 딕셔너리에 저장한다.
+- 1번째 층의 합성곱 계층의 가중치를 W1, 편향을 b1이라는 키로 저장하며, 마찬가지로 2번째 층의 완전연결
+계층의 가중치와 편향을 W2와 b2, 마지막 3번째 층의 완전연결 계층의 가중치와 편향을 W3와 b3라는 키로 각각 
+저장한다.
+
+```python
+# 계층 생성
+        self.layers = OrderedDict()
+        self.layers['Conv1'] = Convolution(self.params['W1'], self.params['b1'],
+                                           conv_param['stride'], conv_param['pad'])
+        self.layers['Relu1'] = Relu()
+        self.layers['Pool1'] = Pooling(pool_h=2, pool_w=2, stride=2)
+        self.layers['Affine1'] = Affine(self.params['W2'], self.params['b2'])
+        self.layers['Relu2'] = Relu()
+        self.layers['Affine2'] = Affine(self.params['W3'], self.params['b3'])
+
+        self.last_layer = SoftmaxWithLoss()
+```
+- 마지막으로는 CNN을 구성하는 계층들을 생성한다.
+- 순서가 있는 딕셔너리(OrderedDist)인 layers에 계층들을 차례로 추가한다.
+- 마지막 SoftmaxWithLoss 계층만큼은 last_layer라는 별도 변수에 저장해둔다.
+
+> 이상이 SimpleConvNet의 초기화이며 다음은 
+> SimpleConvNet의 추론을 수행하는 predict 메서드와 손실 함수의 값을 구하는 loss 메서드이다.
+```python
+    def predict(self, x):
+        for layer in self.layers.values():
+            x = layer.forward(x)
+
+        return x
+
+    def loss(self, x, t):
+        """손실 함수를 구한다.
+
+        Parameters
+        ----------
+        x : 입력 데이터
+        t : 정답 레이블
+        """
+        y = self.predict(x)
+        return self.last_layer.forward(y, t)
+```
+- 이 코드에서 인수 x는 입력 데이터, t는 정답 레이블이다. 
+- 추론을 수행하는 prdict 메서드는 초기화 때 layers에 추가한 계층을 맨 앞에서부터 차례로 forward 메서드를
+호출하며 그 결과를 다음 계층에 전달한다.
+- 손실 함수를 구하는 loss 메서드는 predict 메서드의 결과를 인수로 마지막 층의 forward 메서드를 호출한다.
+- 즉, 첫 계층부터 마지막 계층까지 forward를 처리한다.
+
+> 이어서 오차역전파법으로 기울기를 구하는 구현은 다음과 같다.
+```python
+    def gradient(self, x, t):
+        """기울기를 구한다(오차역전파법).
+
+        Parameters
+        ----------
+        x : 입력 데이터
+        t : 정답 레이블
+
+        Returns
+        -------
+        각 층의 기울기를 담은 사전(dictionary) 변수
+            grads['W1']、grads['W2']、... 각 층의 가중치
+            grads['b1']、grads['b2']、... 각 층의 편향
+        """
+        # forward
+        self.loss(x, t)
+
+        # backward
+        dout = 1
+        dout = self.last_layer.backward(dout)
+
+        layers = list(self.layers.values())
+        layers.reverse()
+        for layer in layers:
+            dout = layer.backward(dout)
+
+        # 결과 저장
+        grads = {}
+        grads['W1'], grads['b1'] = self.layers['Conv1'].dW, self.layers['Conv1'].db
+        grads['W2'], grads['b2'] = self.layers['Affine1'].dW, self.layers['Affine1'].db
+        grads['W3'], grads['b3'] = self.layers['Affine2'].dW, self.layers['Affine2'].db
+
+        return grads
+```
+- 매개변수의 기울기는 오차역전파법으로 구한다. 이 과정은 순전파와 역전파를 반복한다.
+- 지금까지 각 계층의 순전파와 역전파 기능을 제대로 구현했다면, 여기에서는 단지 그것들을 적절한 순서로 호출만
+하면 된다.
+- 마지막으로 grads라는 딕셔너리 변수에 각 가중치 매개변수의 기울기를 저장한다.
+
+> 이상이 SimpleConvNet의 구현이다. 이제 MNIST 데이터셋을 학습하면 되는데 이 코드는 Ch07/train_convnet.py
+> 에 있다. SimpleConvNet을 MNIST 데이터셋으로 학습하면 훈련 데이터에 대한 정확도는 99.82%, 시험
+> 데이터에 대한 정확도는 98.96이 된다. 시험 데이터에 대한 정확도가 무려 99%라는 것은 비교적 작은 네트워크로서는
+> 아주 높다고 할 수 있다. 다음 장에서는 계층을 더 깊게 하여 정확도가 99%가 넘는 네트워크도 구현해볼 예정이다. <br>
+> 지금까지 살펴본 것처럼 합성곱 계층과 풀링 계층은 이미지 인식에 필수적인 모듈이다. 이미지라는 공간적인 형상에 담긴 특징을
+> CNN이 잘 파악하여 손글씨 숫자 인식에서 높은 정확도를 달성할 수 있었다.
+
+
 ## 7.6 CNN 시각화하기
 ## 7.7 대표적인 CNN
 ## 7.8 정리
